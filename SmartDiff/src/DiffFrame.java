@@ -1,12 +1,22 @@
-import javax.swing.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextPane;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.DefaultStyledDocument;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
@@ -14,8 +24,9 @@ import javax.swing.text.StyleContext;
 import javax.swing.text.StyledDocument;
 
 
+
 public class DiffFrame extends JFrame {
-	
+		
 	private JTextPane LeftTextPane;
 	private JTextPane RightTextPane;
 	private JavaSourceData leftSourceData;
@@ -26,6 +37,8 @@ public class DiffFrame extends JFrame {
 	private Style deletedStyle;
 	private Style addedStyle;
 	private Style boldStyle;
+	
+	private Style commentStyle;
 	
 	public DiffFrame() {
 		this.setTitle("Differencing Tool");
@@ -76,12 +89,16 @@ public class DiffFrame extends JFrame {
 		boldStyle = sc.addStyle("BoldStyle", defaultStyle);
 		StyleConstants.setBold(boldStyle, true);
 		
+		commentStyle = sc.addStyle("CommentStyle", defaultStyle);
+		StyleConstants.setForeground(commentStyle, new Color(29, 94, 24));
+		
 	}
 
 	private JTextPane createTextPane() {
 		JTextPane textPane = new JTextPane();
 		textPane.setEditable(false);
 		textPane.setPreferredSize(new Dimension(this.getWidth()/2 - 10, this.getHeight()));
+		textPane.add(new JScrollPane());
 		return textPane;
 	}
 
@@ -157,6 +174,38 @@ public class DiffFrame extends JFrame {
 			//TODO WARNING!!! This is NOT robust!!! Must add logic so it accurately seeks for the method and NOT instances of the method!!!!!!
 			styledDoc.setCharacterAttributes(textPane.getText().replaceAll("\n", "").lastIndexOf(methodName), methodName.length(), boldStyle, false);
 		}
+		
+		
+		// super sloppy and lame comment detection. but the AST getComments seems buggy or I'm just confused...
+		int commentPosition = 0;
+		while (commentPosition != -1){
+			commentPosition = textPane.getText().indexOf("//", commentPosition);
+			
+			// count new lines up to commentPosition
+			int newLineCount = 0;
+			int index = 0;
+			while (index < commentPosition){
+				index = textPane.getText().indexOf("\n", index);
+				if (index < commentPosition){
+					newLineCount++;
+					index++;
+				}
+			}
+			
+			if (commentPosition != -1){
+				styledDoc.setCharacterAttributes(commentPosition - newLineCount, textPane.getText().indexOf("\n", commentPosition) - commentPosition, commentStyle, false);
+				commentPosition += 1;
+			}
+			//commentPosition += 1;
+			
+		}
+		
+//		for (String commentName: sourceData.getCommentList()){
+//			System.out.println(commentName);
+//			//TODO WARNING!!! This is NOT robust!!! Must add logic so it accurately seeks for the method and NOT instances of the method!!!!!!
+//			System.out.println(commentName);
+//			styledDoc.setCharacterAttributes(textPane.getText().replaceAll("\n", "").indexOf(commentName), commentName.length(), commentStyle, false);
+//		}
 	}
 	
 	
